@@ -1,7 +1,7 @@
 # Privacy Policy for Easy PDF
 
 **Effective Date:** October 04, 2026  
-**Last Updated:** October 04, 2026  
+**Last Updated:** October 13, 2026  
 **Application Name:** Easy PDF - Document Scanner & Maker  
 **Package Name:** `com.kssoft.easy_pdf`  
 **Developer/Organization:** KSsoftInfotech  
