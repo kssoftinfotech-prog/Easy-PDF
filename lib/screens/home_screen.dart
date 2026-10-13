@@ -10,6 +10,7 @@ import '../widgets/document_card.dart';
 import '../widgets/scan_option_bottom_sheet.dart';
 import 'page_preview_screen.dart';
 import 'pdf_viewer_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -295,6 +296,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: [
             IconButton(
+              icon: const Icon(Icons.privacy_tip_outlined),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+                );
+              },
+              tooltip: 'Privacy Policy',
+            ),
+            IconButton(
               icon: const Icon(Icons.star_rate_rounded),
               onPressed: () => ReviewService.requestRateApp(context),
               tooltip: 'Rate App',
@@ -424,6 +435,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      );
+    );
   }
 }

@@ -1,11 +1,11 @@
 # Privacy Policy for Easy PDF
 
-**Effective Date:** March 30, 2026  
-**Last Updated:** March 30, 2026  
+**Effective Date:** October 04, 2026  
+**Last Updated:** October 04, 2026  
 **Application Name:** Easy PDF - Document Scanner & Maker  
 **Package Name:** `com.kssoft.easy_pdf`  
-**Developer/Organization:** KS Soft Infotech  
-**Contact Email:** support@kssoftinfotech.com  
+**Developer/Organization:** KSsoftInfotech  
+**Contact Email:** kssoftinfotech@gmail.com  
 
 ---
 
@@ -71,6 +71,6 @@ We may update our Privacy Policy from time to time. Any changes will be posted o
 ## 7. Contact Us
 
 If you have any questions or suggestions regarding this Privacy Policy, please contact us:
-- **Email:** support@kssoftinfotech.com  
-- **Developer:** KS Soft Infotech  
+- **Email:** kssoftinfotech@gmail.com  
+- **Developer:** KSsoftInfotech  
 - **Website:** [https://github.com/kssoftinfotech-prog/Easy-PDF](https://github.com/kssoftinfotech-prog/Easy-PDF)
