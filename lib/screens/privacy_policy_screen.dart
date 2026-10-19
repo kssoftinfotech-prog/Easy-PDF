@@ -54,7 +54,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               theme,
               '5. Contact Us',
-              'For any questions regarding privacy, please contact us at kssoftonfotech@gmail.com.',
+              'For any questions regarding privacy, please contact us at kssoftinfotech@gmail.com.',
             ),
             const SizedBox(height: 30),
           ],
