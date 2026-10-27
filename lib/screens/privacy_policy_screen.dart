@@ -34,7 +34,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               theme,
               '1. Introduction',
-              'Welcome to Easy PDF - Document Scanner & Maker ("Easy PDF", "we", "our", or "us"). We are committed to protecting your privacy and ensuring you have a secure experience when using our application.',
+              'Welcome to Easy PDF - AI Document Scanner & Maker ("Easy PDF", "we", "our", or "us"). We are committed to protecting your privacy and ensuring you have a secure experience when using our application.',
             ),
             _buildSection(
               theme,

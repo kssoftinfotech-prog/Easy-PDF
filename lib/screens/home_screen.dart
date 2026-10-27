@@ -8,6 +8,7 @@ import '../services/review_service.dart';
 import '../services/scanner_service.dart';
 import '../widgets/document_card.dart';
 import '../widgets/scan_option_bottom_sheet.dart';
+import '../widgets/theme_selection_dialog.dart';
 import 'page_preview_screen.dart';
 import 'pdf_viewer_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -274,6 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
@@ -287,33 +289,73 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 24,
                 ),
               ),
-              const SizedBox(width: 12),
-              const Text(
-                'Easy PDF Maker',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              const SizedBox(width: 10),
+              const Flexible(
+                child: Text(
+                  'Easy PDF',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.privacy_tip_outlined),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
-                );
-              },
-              tooltip: 'Privacy Policy',
-            ),
-            IconButton(
-              icon: const Icon(Icons.star_rate_rounded),
-              onPressed: () => ReviewService.requestRateApp(context),
-              tooltip: 'Rate App',
-            ),
-            IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _loadDocuments,
               tooltip: 'Refresh',
+            ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'More options',
+              onSelected: (value) {
+                switch (value) {
+                  case 'theme':
+                    ThemeSelectionDialog.show(context);
+                    break;
+                  case 'privacy':
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+                    );
+                    break;
+                  case 'rate':
+                    ReviewService.requestRateApp(context);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'theme',
+                  child: Row(
+                    children: [
+                      Icon(Icons.palette_outlined, size: 20),
+                      SizedBox(width: 12),
+                      Text('Choose Theme'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'privacy',
+                  child: Row(
+                    children: [
+                      Icon(Icons.privacy_tip_outlined, size: 20),
+                      SizedBox(width: 12),
+                      Text('Privacy Policy'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'rate',
+                  child: Row(
+                    children: [
+                      Icon(Icons.star_rate_rounded, color: Colors.amber, size: 20),
+                      SizedBox(width: 12),
+                      Text('Rate App'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
