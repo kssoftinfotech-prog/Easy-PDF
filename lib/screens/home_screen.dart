@@ -43,37 +43,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<bool> _checkAndRequestPermissions(ScanSource source) async {
-    final cameraStatus = await Permission.camera.status;
-    final photosStatus = await Permission.photos.status;
-    final storageStatus = await Permission.storage.status;
-    final hasStorage = photosStatus.isGranted || storageStatus.isGranted;
-
-    if (cameraStatus.isGranted && (source == ScanSource.camera || hasStorage)) {
-      return true;
-    }
-
-    // Request permissions
-    final requestedCamera = await Permission.camera.request();
-    PermissionStatus requestedStorage = PermissionStatus.granted;
+    // Gallery picker uses Android System Photo Picker, which requires no permissions
     if (source == ScanSource.gallery) {
-      requestedStorage = await Permission.photos.request();
-      if (!requestedStorage.isGranted) {
-        requestedStorage = await Permission.storage.request();
-      }
-    }
-
-    if (requestedCamera.isGranted && (source == ScanSource.camera || requestedStorage.isGranted)) {
       return true;
     }
 
-    // If denied or permanently denied, show settings dialog
+    // Camera scanner requires Camera permission
+    final cameraStatus = await Permission.camera.status;
+    if (cameraStatus.isGranted) {
+      return true;
+    }
+
+    final requestedCamera = await Permission.camera.request();
+    if (requestedCamera.isGranted) {
+      return true;
+    }
+
     if (mounted) {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Permissions Required'),
+          title: const Text('Camera Permission Required'),
           content: const Text(
-            'Camera and Storage permissions are required to scan physical documents and import photos from your gallery. Please grant permissions in App Settings.',
+            'Camera permission is required to scan physical hardcopy documents. Please grant permission in App Settings.',
           ),
           actions: [
             TextButton(
