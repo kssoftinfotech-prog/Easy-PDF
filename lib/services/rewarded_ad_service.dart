@@ -5,8 +5,8 @@ class RewardedAdService {
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
 
-  // Google Test Rewarded Ad Unit ID for Android
-  final String _adUnitId = 'ca-app-pub-3940256099942544/5224354917';
+  // Live AdMob Rewarded Ad Unit ID for Android
+  final String _adUnitId = 'ca-app-pub-2950394301574451/8171000911';
 
   void loadAd() {
     RewardedAd.load(
