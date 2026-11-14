@@ -6,6 +6,7 @@ class RewardedAdService {
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
   bool _isLoadingAd = false;
+  final List<VoidCallback> _onAdLoadedCallbacks = [];
 
   // Live AdMob Rewarded Ad Unit ID for Android
   final String _adUnitId = 'ca-app-pub-2950394301574451/8171000911';
@@ -20,7 +21,16 @@ class RewardedAdService {
   }
 
   void loadAd({VoidCallback? onAdLoadedCallback}) {
-    if (_isAdLoaded || _isLoadingAd) return;
+    if (onAdLoadedCallback != null) {
+      _onAdLoadedCallbacks.add(onAdLoadedCallback);
+    }
+
+    if (_isAdLoaded) {
+      _notifyCallbacks();
+      return;
+    }
+
+    if (_isLoadingAd) return;
     _isLoadingAd = true;
 
     RewardedAd.load(
@@ -31,95 +41,98 @@ class RewardedAdService {
           _rewardedAd = ad;
           _isAdLoaded = true;
           _isLoadingAd = false;
-          if (onAdLoadedCallback != null) {
-            onAdLoadedCallback();
-          }
+          _notifyCallbacks();
         },
         onAdFailedToLoad: (LoadAdError error) {
           _rewardedAd = null;
           _isAdLoaded = false;
           _isLoadingAd = false;
+          _onAdLoadedCallbacks.clear();
         },
       ),
     );
+  }
+
+  void _notifyCallbacks() {
+    final List<VoidCallback> callbacks = List.from(_onAdLoadedCallbacks);
+    _onAdLoadedCallbacks.clear();
+    for (final callback in callbacks) {
+      callback();
+    }
   }
 
   Future<void> showAdOrWait({
     required BuildContext context,
     required VoidCallback onRewarded,
   }) async {
-    // 1. Check internet connection first
     final isOnline = await hasInternetConnection();
     if (!context.mounted) return;
+
     if (!isOnline) {
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.wifi_off_rounded, color: Colors.orange, size: 28),
-                SizedBox(width: 8),
-                Expanded(child: Text('Internet Required')),
-              ],
-            ),
-            content: const Text(
-              'An active internet connection is required to load the video ad and save your PDF document. Please connect to Wi-Fi or Mobile Data and try again.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.wifi_off_rounded, color: Colors.orange, size: 28),
+              SizedBox(width: 8),
+              Expanded(child: Text('Internet Required')),
             ],
           ),
-        );
-      }
+          content: const Text(
+            'An active internet connection is required to load the video ad and save your PDF document. Please connect to Wi-Fi or Mobile Data and try again.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
       return;
     }
 
-    // 2. If ad is loaded, show immediately
     if (_isAdLoaded && _rewardedAd != null) {
       _presentAd(context: context, onRewarded: onRewarded);
       return;
     }
 
-    // 3. Otherwise, show loading dialog and wait for ad to load
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 20),
-              Expanded(
-                child: Text('Loading video ad...\nPlease wait a moment.'),
-              ),
-            ],
-          ),
+    // Show loading dialog
+    bool dialogShowing = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Expanded(
+              child: Text('Loading video ad...\nPlease wait a moment.'),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
 
-    // Attempt to load ad
     loadAd(onAdLoadedCallback: () {
-      if (context.mounted) {
+      if (dialogShowing && context.mounted) {
+        dialogShowing = false;
         Navigator.pop(context); // Dismiss loading dialog
         _presentAd(context: context, onRewarded: onRewarded);
       }
     });
 
-    // Timeout safety if ad fails to load after 10 seconds
-    Future.delayed(const Duration(seconds: 10), () {
-      if (_isLoadingAd) {
-        _isLoadingAd = false;
+    // Timeout after 8 seconds
+    Future.delayed(const Duration(seconds: 8), () {
+      if (dialogShowing && !_isAdLoaded) {
+        dialogShowing = false;
         if (context.mounted) {
-          Navigator.pop(context); // Dismiss loading dialog
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to load video ad. Please try again.'),
+              content: Text('Ad loading timed out. Please tap "Watch Ad & Save" again.'),
             ),
           );
         }
