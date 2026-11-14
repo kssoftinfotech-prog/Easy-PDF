@@ -143,14 +143,9 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
             ),
             onPressed: () {
               Navigator.pop(context);
-              _rewardedAdService.showAd(
+              _rewardedAdService.showAdOrWait(
+                context: context,
                 onRewarded: () {
-                  _generatePdf();
-                },
-                onAdNotReady: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Ad loading... Generating PDF.')),
-                  );
                   _generatePdf();
                 },
               );
