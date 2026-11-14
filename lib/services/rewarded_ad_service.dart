@@ -133,7 +133,11 @@ class RewardedAdService {
           if (dialogShowing && context.mounted) {
             dialogShowing = false;
             Navigator.pop(context); // Dismiss loading dialog
-            _presentAd(context: context, onRewarded: onRewarded);
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (context.mounted) {
+                _presentAd(context: context, onRewarded: onRewarded);
+              }
+            });
           }
         },
         onFailed: (error) {
@@ -163,6 +167,8 @@ class RewardedAdService {
     required VoidCallback onRewarded,
   }) {
     bool userEarnedReward = false;
+
+    if (_rewardedAd == null) return;
 
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (RewardedAd ad) {
