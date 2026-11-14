@@ -24,6 +24,7 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
   late TextEditingController _fileNameController;
   PageFormatOption _selectedFormat = PageFormatOption.a4;
   bool _isGenerating = false;
+  bool _isAdLoading = false;
   final ScannerService _scannerService = ScannerService();
   final RewardedAdService _rewardedAdService = RewardedAdService();
 
@@ -101,8 +102,8 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
     }
   }
 
-  void _onSavePressed() {
-    if (_imagePaths.isEmpty) return;
+  void _onSavePressed() async {
+    if (_imagePaths.isEmpty || _isGenerating || _isAdLoading) return;
 
     final name = _fileNameController.text.trim();
     if (name.isEmpty) {
@@ -112,49 +113,24 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.ondemand_video_rounded, color: Colors.blue, size: 28),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Watch Ad to Save PDF',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Please watch a short video ad to save and generate your PDF document.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              _rewardedAdService.showAdOrWait(
-                context: context,
-                onRewarded: () {
-                  _generatePdf();
-                },
-              );
-            },
-            child: const Text('Watch Ad & Save'),
-          ),
-        ],
-      ),
-    );
+    setState(() {
+      _isAdLoading = true;
+    });
+
+    try {
+      await _rewardedAdService.presentAdIfReady(
+        context: context,
+        onRewarded: () {
+          _generatePdf();
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAdLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _generatePdf() async {
@@ -369,10 +345,21 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            onPressed: _isGenerating ? null : _onSavePressed,
-            icon: const Icon(Icons.ondemand_video_rounded),
+            onPressed: (_isGenerating || _isAdLoading) ? null : _onSavePressed,
+            icon: _isAdLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.ondemand_video_rounded),
             label: Text(
-              'Watch Ad & Save PDF (${_imagePaths.length} ${_imagePaths.length == 1 ? 'Page' : 'Pages'})',
+              _isAdLoading
+                  ? 'Loading Video Ad...'
+                  : 'Watch Ad & Save PDF (${_imagePaths.length} ${_imagePaths.length == 1 ? 'Page' : 'Pages'})',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),

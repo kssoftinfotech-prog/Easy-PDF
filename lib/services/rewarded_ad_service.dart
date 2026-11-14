@@ -55,13 +55,12 @@ class RewardedAdService {
     return _adLoadCompleter!.future;
   }
 
-  Future<void> showAdOrWait({
+  Future<bool> presentAdIfReady({
     required BuildContext context,
     required VoidCallback onRewarded,
   }) async {
-    // 1. Internet check
     final isOnline = await hasInternetConnection();
-    if (!context.mounted) return;
+    if (!context.mounted) return false;
 
     if (!isOnline) {
       showDialog(
@@ -85,60 +84,27 @@ class RewardedAdService {
           ],
         ),
       );
-      return;
+      return false;
     }
 
-    // 2. If already loaded, present immediately!
-    if (_isAdLoaded && _rewardedAd != null) {
-      _presentAd(context: context, onRewarded: onRewarded);
-      return;
-    }
-
-    // 3. Show loading dialog while awaiting the Completer
-    BuildContext? dialogContext;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        dialogContext = ctx;
-        return const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 20),
-              Expanded(
-                child: Text('Loading video ad...\nPlease wait a moment.'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    // Wait for ad load with a 10s timeout limit
-    final success = await loadAd().timeout(
+    // Ensure ad is loaded
+    final loaded = await loadAd().timeout(
       const Duration(seconds: 10),
       onTimeout: () => false,
     );
 
-    // Dismiss loading dialog
-    if (dialogContext != null && context.mounted) {
-      Navigator.of(dialogContext!).pop();
-    }
+    if (!context.mounted) return false;
 
-    if (!context.mounted) return;
-
-    if (success && _isAdLoaded && _rewardedAd != null) {
-      await Future.delayed(const Duration(milliseconds: 250));
-      if (context.mounted) {
-        _presentAd(context: context, onRewarded: onRewarded);
-      }
+    if (loaded && _isAdLoaded && _rewardedAd != null) {
+      _presentAd(context: context, onRewarded: onRewarded);
+      return true;
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Ad loading delayed. Please tap "Watch Ad & Save" again.'),
         ),
       );
+      return false;
     }
   }
 
