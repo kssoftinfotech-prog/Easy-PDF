@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -5,9 +6,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 class RewardedAdService {
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
-  bool _isLoadingAd = false;
-  final List<VoidCallback> _onAdLoadedCallbacks = [];
-  final List<Function(LoadAdError)> _onAdFailedCallbacks = [];
+  Completer<bool>? _adLoadCompleter;
 
   // Live AdMob Rewarded Ad Unit ID for Android
   final String _adUnitId = 'ca-app-pub-2950394301574451/8171000911';
@@ -21,17 +20,16 @@ class RewardedAdService {
     }
   }
 
-  void loadAd({VoidCallback? onLoaded, Function(LoadAdError)? onFailed}) {
-    if (onLoaded != null) _onAdLoadedCallbacks.add(onLoaded);
-    if (onFailed != null) _onAdFailedCallbacks.add(onFailed);
-
+  Future<bool> loadAd() async {
     if (_isAdLoaded && _rewardedAd != null) {
-      _notifySuccess();
-      return;
+      return true;
     }
 
-    if (_isLoadingAd) return;
-    _isLoadingAd = true;
+    if (_adLoadCompleter != null && !_adLoadCompleter!.isCompleted) {
+      return _adLoadCompleter!.future;
+    }
+
+    _adLoadCompleter = Completer<bool>();
 
     RewardedAd.load(
       adUnitId: _adUnitId,
@@ -40,41 +38,28 @@ class RewardedAdService {
         onAdLoaded: (RewardedAd ad) {
           _rewardedAd = ad;
           _isAdLoaded = true;
-          _isLoadingAd = false;
-          _notifySuccess();
+          if (!(_adLoadCompleter?.isCompleted ?? true)) {
+            _adLoadCompleter!.complete(true);
+          }
         },
         onAdFailedToLoad: (LoadAdError error) {
           _rewardedAd = null;
           _isAdLoaded = false;
-          _isLoadingAd = false;
-          _notifyFailure(error);
+          if (!(_adLoadCompleter?.isCompleted ?? true)) {
+            _adLoadCompleter!.complete(false);
+          }
         },
       ),
     );
-  }
 
-  void _notifySuccess() {
-    final List<VoidCallback> callbacks = List.from(_onAdLoadedCallbacks);
-    _onAdLoadedCallbacks.clear();
-    _onAdFailedCallbacks.clear();
-    for (final cb in callbacks) {
-      cb();
-    }
-  }
-
-  void _notifyFailure(LoadAdError error) {
-    final List<Function(LoadAdError)> callbacks = List.from(_onAdFailedCallbacks);
-    _onAdLoadedCallbacks.clear();
-    _onAdFailedCallbacks.clear();
-    for (final cb in callbacks) {
-      cb(error);
-    }
+    return _adLoadCompleter!.future;
   }
 
   Future<void> showAdOrWait({
     required BuildContext context,
     required VoidCallback onRewarded,
   }) async {
+    // 1. Internet check
     final isOnline = await hasInternetConnection();
     if (!context.mounted) return;
 
@@ -103,78 +88,74 @@ class RewardedAdService {
       return;
     }
 
-    // 1. If ad is loaded, show immediately
+    // 2. If already loaded, present immediately!
     if (_isAdLoaded && _rewardedAd != null) {
       _presentAd(context: context, onRewarded: onRewarded);
       return;
     }
 
-    // 2. Show loading dialog and attempt to load with auto-retry
-    bool dialogShowing = true;
+    // 3. Show loading dialog while awaiting the Completer
+    BuildContext? dialogContext;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 20),
-            Expanded(
-              child: Text('Loading video ad...\nPlease wait a moment.'),
-            ),
-          ],
-        ),
-      ),
+      builder: (ctx) {
+        dialogContext = ctx;
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Expanded(
+                child: Text('Loading video ad...\nPlease wait a moment.'),
+              ),
+            ],
+          ),
+        );
+      },
     );
 
-    void attemptLoad(int attemptsLeft) {
-      loadAd(
-        onLoaded: () {
-          if (dialogShowing && context.mounted) {
-            dialogShowing = false;
-            Navigator.pop(context); // Dismiss loading dialog
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (context.mounted) {
-                _presentAd(context: context, onRewarded: onRewarded);
-              }
-            });
-          }
-        },
-        onFailed: (error) {
-          if (attemptsLeft > 1) {
-            // Auto-retry once if initial load failed
-            attemptLoad(attemptsLeft - 1);
-          } else {
-            if (dialogShowing && context.mounted) {
-              dialogShowing = false;
-              Navigator.pop(context); // Dismiss loading dialog
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Ad loading delayed. Please tap "Watch Ad & Save" again.'),
-                ),
-              );
-            }
-          }
-        },
-      );
+    // Wait for ad load with a 10s timeout limit
+    final success = await loadAd().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => false,
+    );
+
+    // Dismiss loading dialog
+    if (dialogContext != null && context.mounted) {
+      Navigator.of(dialogContext!).pop();
     }
 
-    attemptLoad(2);
+    if (!context.mounted) return;
+
+    if (success && _isAdLoaded && _rewardedAd != null) {
+      await Future.delayed(const Duration(milliseconds: 250));
+      if (context.mounted) {
+        _presentAd(context: context, onRewarded: onRewarded);
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ad loading delayed. Please tap "Watch Ad & Save" again.'),
+        ),
+      );
+    }
   }
 
   void _presentAd({
     required BuildContext context,
     required VoidCallback onRewarded,
   }) {
-    bool userEarnedReward = false;
-
     if (_rewardedAd == null) return;
+
+    bool userEarnedReward = false;
 
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (RewardedAd ad) {
         ad.dispose();
         _isAdLoaded = false;
         _rewardedAd = null;
+        _adLoadCompleter = null;
         loadAd(); // Preload next ad
 
         if (userEarnedReward) {
@@ -193,6 +174,7 @@ class RewardedAdService {
         ad.dispose();
         _isAdLoaded = false;
         _rewardedAd = null;
+        _adLoadCompleter = null;
         loadAd();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
