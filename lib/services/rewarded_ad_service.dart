@@ -7,6 +7,7 @@ class RewardedAdService {
   bool _isAdLoaded = false;
   bool _isLoadingAd = false;
   final List<VoidCallback> _onAdLoadedCallbacks = [];
+  final List<Function(LoadAdError)> _onAdFailedCallbacks = [];
 
   // Live AdMob Rewarded Ad Unit ID for Android
   final String _adUnitId = 'ca-app-pub-2950394301574451/8171000911';
@@ -20,13 +21,12 @@ class RewardedAdService {
     }
   }
 
-  void loadAd({VoidCallback? onAdLoadedCallback}) {
-    if (onAdLoadedCallback != null) {
-      _onAdLoadedCallbacks.add(onAdLoadedCallback);
-    }
+  void loadAd({VoidCallback? onLoaded, Function(LoadAdError)? onFailed}) {
+    if (onLoaded != null) _onAdLoadedCallbacks.add(onLoaded);
+    if (onFailed != null) _onAdFailedCallbacks.add(onFailed);
 
-    if (_isAdLoaded) {
-      _notifyCallbacks();
+    if (_isAdLoaded && _rewardedAd != null) {
+      _notifySuccess();
       return;
     }
 
@@ -41,23 +41,33 @@ class RewardedAdService {
           _rewardedAd = ad;
           _isAdLoaded = true;
           _isLoadingAd = false;
-          _notifyCallbacks();
+          _notifySuccess();
         },
         onAdFailedToLoad: (LoadAdError error) {
           _rewardedAd = null;
           _isAdLoaded = false;
           _isLoadingAd = false;
-          _onAdLoadedCallbacks.clear();
+          _notifyFailure(error);
         },
       ),
     );
   }
 
-  void _notifyCallbacks() {
+  void _notifySuccess() {
     final List<VoidCallback> callbacks = List.from(_onAdLoadedCallbacks);
     _onAdLoadedCallbacks.clear();
-    for (final callback in callbacks) {
-      callback();
+    _onAdFailedCallbacks.clear();
+    for (final cb in callbacks) {
+      cb();
+    }
+  }
+
+  void _notifyFailure(LoadAdError error) {
+    final List<Function(LoadAdError)> callbacks = List.from(_onAdFailedCallbacks);
+    _onAdLoadedCallbacks.clear();
+    _onAdFailedCallbacks.clear();
+    for (final cb in callbacks) {
+      cb(error);
     }
   }
 
@@ -93,12 +103,13 @@ class RewardedAdService {
       return;
     }
 
+    // 1. If ad is loaded, show immediately
     if (_isAdLoaded && _rewardedAd != null) {
       _presentAd(context: context, onRewarded: onRewarded);
       return;
     }
 
-    // Show loading dialog
+    // 2. Show loading dialog and attempt to load with auto-retry
     bool dialogShowing = true;
     showDialog(
       context: context,
@@ -116,28 +127,35 @@ class RewardedAdService {
       ),
     );
 
-    loadAd(onAdLoadedCallback: () {
-      if (dialogShowing && context.mounted) {
-        dialogShowing = false;
-        Navigator.pop(context); // Dismiss loading dialog
-        _presentAd(context: context, onRewarded: onRewarded);
-      }
-    });
+    void attemptLoad(int attemptsLeft) {
+      loadAd(
+        onLoaded: () {
+          if (dialogShowing && context.mounted) {
+            dialogShowing = false;
+            Navigator.pop(context); // Dismiss loading dialog
+            _presentAd(context: context, onRewarded: onRewarded);
+          }
+        },
+        onFailed: (error) {
+          if (attemptsLeft > 1) {
+            // Auto-retry once if initial load failed
+            attemptLoad(attemptsLeft - 1);
+          } else {
+            if (dialogShowing && context.mounted) {
+              dialogShowing = false;
+              Navigator.pop(context); // Dismiss loading dialog
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Ad loading delayed. Please tap "Watch Ad & Save" again.'),
+                ),
+              );
+            }
+          }
+        },
+      );
+    }
 
-    // Timeout after 8 seconds
-    Future.delayed(const Duration(seconds: 8), () {
-      if (dialogShowing && !_isAdLoaded) {
-        dialogShowing = false;
-        if (context.mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ad loading timed out. Please tap "Watch Ad & Save" again.'),
-            ),
-          );
-        }
-      }
-    });
+    attemptLoad(2);
   }
 
   void _presentAd({
