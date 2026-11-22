@@ -224,27 +224,30 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
                           const Text('Page Size: ', style: TextStyle(fontWeight: FontWeight.w600)),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: SegmentedButton<PageFormatOption>(
-                              segments: const [
-                                ButtonSegment(
-                                  value: PageFormatOption.a4,
-                                  label: Text('A4'),
-                                ),
-                                ButtonSegment(
-                                  value: PageFormatOption.letter,
-                                  label: Text('Letter'),
-                                ),
-                                ButtonSegment(
-                                  value: PageFormatOption.fitImage,
-                                  label: Text('Auto'),
-                                ),
-                              ],
-                              selected: {_selectedFormat},
-                              onSelectionChanged: (Set<PageFormatOption> newSelection) {
-                                setState(() {
-                                  _selectedFormat = newSelection.first;
-                                });
-                              },
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: SegmentedButton<PageFormatOption>(
+                                segments: const [
+                                  ButtonSegment(
+                                    value: PageFormatOption.a4,
+                                    label: Text('A4'),
+                                  ),
+                                  ButtonSegment(
+                                    value: PageFormatOption.letter,
+                                    label: Text('Letter'),
+                                  ),
+                                  ButtonSegment(
+                                    value: PageFormatOption.fitImage,
+                                    label: Text('Auto'),
+                                  ),
+                                ],
+                                selected: {_selectedFormat},
+                                onSelectionChanged: (Set<PageFormatOption> newSelection) {
+                                  setState(() {
+                                    _selectedFormat = newSelection.first;
+                                  });
+                                },
+                              ),
                             ),
                           ),
                         ],

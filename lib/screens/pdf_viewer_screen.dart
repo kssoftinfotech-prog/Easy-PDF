@@ -108,7 +108,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     if (confirm == true) {
       await DocumentStorage.deletePdf(_currentPath);
       if (mounted) {
-        Navigator.pop(context, true); // Return true to indicate deleted
+        Navigator.pop(context, true);
       }
     }
   }
@@ -126,24 +126,50 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.star_rate_rounded),
-            tooltip: 'Rate App',
-            onPressed: () => ReviewService.requestRateApp(context),
-          ),
-          IconButton(
             icon: const Icon(Icons.share_outlined),
             tooltip: 'Share PDF',
             onPressed: _sharePdf,
           ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Rename',
-            onPressed: _renamePdf,
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'Delete',
-            onPressed: _deletePdf,
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More options',
+            onSelected: (value) {
+              if (value == 'rename') _renamePdf();
+              if (value == 'delete') _deletePdf();
+              if (value == 'rate') ReviewService.requestRateApp(context);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'rename',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined, size: 20),
+                    SizedBox(width: 12),
+                    Text('Rename'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    SizedBox(width: 12),
+                    Text('Delete', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'rate',
+                child: Row(
+                  children: [
+                    Icon(Icons.star_rate_rounded, color: Colors.amber, size: 20),
+                    SizedBox(width: 12),
+                    Text('Rate App'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -153,7 +179,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               allowSharing: true,
               allowPrinting: true,
               canChangePageFormat: false,
-              useActions: false, // We provide clean top AppBar actions
+              useActions: false,
             )
           : const Center(
               child: Text('PDF File not found'),
