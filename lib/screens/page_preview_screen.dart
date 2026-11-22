@@ -197,67 +197,61 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
                 ],
               ),
             )
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _fileNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Document Name',
+                      hintText: 'Enter file name',
+                      prefixIcon: const Icon(Icons.picture_as_pdf),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _fileNameController.clear(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
                     children: [
-                      TextField(
-                        controller: _fileNameController,
-                        decoration: InputDecoration(
-                          labelText: 'Document Name',
-                          hintText: 'Enter file name',
-                          prefixIcon: const Icon(Icons.picture_as_pdf),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () => _fileNameController.clear(),
+                      const Text('Page Size: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SegmentedButton<PageFormatOption>(
+                            segments: const [
+                              ButtonSegment(
+                                value: PageFormatOption.a4,
+                                label: Text('A4'),
+                              ),
+                              ButtonSegment(
+                                value: PageFormatOption.letter,
+                                label: Text('Letter'),
+                               ),
+                              ButtonSegment(
+                                value: PageFormatOption.fitImage,
+                                label: Text('Auto'),
+                              ),
+                            ],
+                            selected: {_selectedFormat},
+                            onSelectionChanged: (Set<PageFormatOption> newSelection) {
+                              setState(() {
+                                _selectedFormat = newSelection.first;
+                              });
+                            },
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Text('Page Size: ', style: TextStyle(fontWeight: FontWeight.w600)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: SegmentedButton<PageFormatOption>(
-                                segments: const [
-                                  ButtonSegment(
-                                    value: PageFormatOption.a4,
-                                    label: Text('A4'),
-                                  ),
-                                  ButtonSegment(
-                                    value: PageFormatOption.letter,
-                                    label: Text('Letter'),
-                                  ),
-                                  ButtonSegment(
-                                    value: PageFormatOption.fitImage,
-                                    label: Text('Auto'),
-                                  ),
-                                ],
-                                selected: {_selectedFormat},
-                                onSelectionChanged: (Set<PageFormatOption> newSelection) {
-                                  setState(() {
-                                    _selectedFormat = newSelection.first;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
+                  const SizedBox(height: 12),
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
@@ -273,11 +267,11 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
                       ),
                     ],
                   ),
-                ),
-                const Divider(),
-                Expanded(
-                  child: ReorderableListView.builder(
-                    padding: const EdgeInsets.all(16),
+                  const Divider(),
+                  ReorderableListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: _imagePaths.length,
                     onReorder: (oldIndex, newIndex) {
                       setState(() {
@@ -334,8 +328,8 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
                       );
                     },
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
       bottomNavigationBar: SafeArea(
         child: Padding(
