@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/home_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
   await ThemeService.init();
-  runApp(const EasyPdfApp());
+
+  final prefs = await SharedPreferences.getInstance();
+  final bool isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
+
+  runApp(EasyPdfApp(isFirstLaunch: isFirstLaunch));
 }
 
 class EasyPdfApp extends StatelessWidget {
-  const EasyPdfApp({super.key});
+  final bool isFirstLaunch;
+
+  const EasyPdfApp({super.key, required this.isFirstLaunch});
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +54,7 @@ class EasyPdfApp extends StatelessWidget {
             ),
           ),
           themeMode: currentThemeMode,
-          home: const HomeScreen(),
+          home: isFirstLaunch ? const OnboardingScreen() : const HomeScreen(),
         );
       },
     );

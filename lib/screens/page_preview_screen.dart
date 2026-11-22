@@ -292,6 +292,7 @@ class _PagePreviewScreenState extends State<PagePreviewScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: ListTile(
+                          onTap: () => _cropPage(index),
                           contentPadding: const EdgeInsets.all(8),
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),

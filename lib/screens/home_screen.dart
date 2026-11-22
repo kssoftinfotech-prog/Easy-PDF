@@ -228,24 +228,74 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<bool> _onWillPop() async {
-    final shouldExit = await showDialog<bool>(
+    final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Exit App?'),
-        content: const Text('Are you sure you want to exit Easy PDF?'),
+        title: const Row(
+          children: [
+            Icon(Icons.exit_to_app_rounded, color: Colors.blue, size: 28),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Exit Easy PDF?',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'If you enjoy using Easy PDF, please rate us 5 stars on the Google Play Store!',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                5,
+                (index) => const Icon(
+                  Icons.star_rounded,
+                  color: Colors.amber,
+                  size: 32,
+                ),
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context, 'cancel'),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Exit'),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(context, 'exit'),
+            child: const Text('Exit Only'),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade700,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, 'rate_exit'),
+            icon: const Icon(Icons.star_rate_rounded, size: 18),
+            label: const Text('Rate 5 Stars & Exit'),
           ),
         ],
       ),
     );
-    return shouldExit ?? false;
+
+    if (result == 'rate_exit') {
+      if (mounted) {
+        await ReviewService.requestRateApp(context);
+      }
+      return true;
+    } else if (result == 'exit') {
+      return true;
+    }
+    return false;
   }
 
   @override
