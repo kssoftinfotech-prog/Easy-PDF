@@ -20,8 +20,8 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""
+            android:screenOrientation="fullSensor"
             android:resizeableActivity="true"
-            android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
@@ -42,11 +42,12 @@
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="true"
+            android:screenOrientation="fullSensor"
             android:resizeableActivity="true"
-            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
 
-        <!-- Override Google ML Kit Document Scanner activity to support full sensor landscape rotation -->
+        <!-- Enable full sensor landscape & portrait orientation for Google ML Kit Document Scanner -->
         <activity
             android:name="com.google.android.gms.getdoc.scanner.DocumentScannerActivity"
             android:exported="false"
