@@ -4,18 +4,34 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'services/cache_service.dart';
 import 'services/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Edge-to-Edge System Bar Handling for Android 15+ (API 35+)
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
+
   MobileAds.instance.initialize();
   await ThemeService.init();
+
+  // Clear stale temporary scanner & cropper image cache on launch
+  CacheService.clearTempCache();
 
   final prefs = await SharedPreferences.getInstance();
   final bool isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
